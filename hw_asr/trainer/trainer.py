@@ -141,11 +141,19 @@ class Trainer(BaseTrainer):
         else:
             batch["logits"] = outputs
 
-        batch["log_probs"] = F.log_softmax(batch["logits"], dim=-1)
+        batch["log_probs"] = F.log_softmax(batch["logits"], dim=-1)  # (batch_size, max_spec_length, alphabet_size)
         batch["log_probs_length"] = self.model.transform_input_lengths(
             batch["spectrogram_length"]
         )
         batch["loss"] = self.criterion(**batch)
+
+        beam_search_results = []
+        for probs, length in zip(batch["log_probs"].exp().cpu(), batch["log_probs_length"].numpy()):
+            beam_search_results.append(
+                self.text_encoder.ctc_beam_search(probs, length, beam_size=100)
+            )
+        batch["beam_search"] = beam_search_results
+
         if is_train:
             batch["loss"].backward()
             self._clip_grad_norm()
