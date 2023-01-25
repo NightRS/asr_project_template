@@ -175,9 +175,27 @@ class BaseTrainer:
         self.model.load_state_dict(checkpoint["state_dict"])
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
+        optim_equal = checkpoint["config"]["optimizer"] == self.config["optimizer"]
+
+        try:
+            lr_scheduler_checkpoint = checkpoint["config"]["lr_scheduler"]
+            lr_in_checkpoint = True
+        except KeyError as _:
+            lr_in_checkpoint = False
+
+        try:
+            lr_scheduler_config = checkpoint["config"]["lr_scheduler"]
+            lr_in_config = True
+        except KeyError as _:
+            lr_in_config = False
+
         if (
-                checkpoint["config"]["optimizer"] != self.config["optimizer"] or
-                checkpoint["config"]["lr_scheduler"] != self.config["lr_scheduler"]
+                not optim_equal or
+                lr_in_checkpoint != lr_in_config or (
+                    lr_in_checkpoint and
+                    lr_in_config and
+                    lr_scheduler_checkpoint != lr_scheduler_config
+                )
         ):
             self.logger.warning(
                 "Warning: Optimizer or lr_scheduler given in config file is different "
