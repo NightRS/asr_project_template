@@ -1,5 +1,6 @@
 import logging
 import random
+import pickle
 from typing import List
 
 import numpy as np
@@ -43,7 +44,7 @@ class BaseDataset(Dataset):
         data_dict = self._index[ind]
         audio_path = data_dict["path"]
         audio_wave = self.load_audio(audio_path)
-        audio_wave, audio_spec = self.process_wave(audio_wave)
+        audio_wave, audio_spec = self.process_wave(audio_wave, audio_path)
         return {
             "audio": audio_wave,
             "spectrogram": audio_spec,
@@ -68,15 +69,23 @@ class BaseDataset(Dataset):
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         return audio_tensor
 
-    def process_wave(self, audio_tensor_wave: Tensor):
+    def process_wave(self, audio_tensor_wave: Tensor, audio_path: str):
         with torch.no_grad():
             if self.wave_augs is not None:
                 audio_tensor_wave = self.wave_augs(audio_tensor_wave)
-            wave2spec = self.config_parser.init_obj(
-                self.config_parser["preprocessing"]["spectrogram"],
-                torchaudio.transforms,
-            )
-            audio_tensor_spec = wave2spec(audio_tensor_wave)
+
+            if self.wave_augs is None and "spec_path" in self._index[0]:
+                spec_path = audio_path[:audio_path.rfind(".")] + \
+                    f'_{self.config_parser["preprocessing"]["spectrogram"]["args"]["n_mels"]}.pickle'
+                with open(spec_path, 'rb') as spec_f:
+                    audio_tensor_spec = pickle.load(spec_f)
+            else:
+                wave2spec = self.config_parser.init_obj(
+                    self.config_parser["preprocessing"]["spectrogram"],
+                    torchaudio.transforms,
+                )
+                audio_tensor_spec = wave2spec(audio_tensor_wave)
+
             if self.spec_augs is not None:
                 audio_tensor_spec = self.spec_augs(audio_tensor_spec)
             if self.log_spec:

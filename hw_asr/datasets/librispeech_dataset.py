@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import pickle
 from pathlib import Path
 
 import torchaudio
@@ -25,8 +26,10 @@ URL_LINKS = {
 
 
 class LibrispeechDataset(BaseDataset):
-    def __init__(self, part, data_dir=None, *args, **kwargs):
+    def __init__(self, part, data_dir=None, config_parser=None, *args, **kwargs):
         assert part in URL_LINKS or part == 'train_all'
+
+        self.config_parser = config_parser
 
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets" / "librispeech"
@@ -38,7 +41,7 @@ class LibrispeechDataset(BaseDataset):
         else:
             index = self._get_or_load_index(part)
 
-        super().__init__(index, *args, **kwargs)
+        super().__init__(index, *args, config_parser=config_parser, **kwargs)
 
     def _load_part(self, part):
         arch_path = self._data_dir / f"{part}.tar.gz"
@@ -83,9 +86,22 @@ class LibrispeechDataset(BaseDataset):
                     flac_path = flac_dir / f"{f_id}.flac"
                     t_info = torchaudio.info(str(flac_path))
                     length = t_info.num_frames / t_info.sample_rate
+
+                    path = str(flac_path.absolute().resolve())
+                    spec_path = path[:path.rfind(".")] + \
+                        f'_{self.config_parser["preprocessing"]["spectrogram"]["args"]["n_mels"]}.pickle'
+                    wave2spec = self.config_parser.init_obj(
+                        self.config_parser["preprocessing"]["spectrogram"],
+                        torchaudio.transforms,
+                    )
+                    audio_tensor_spec = wave2spec(self.load_audio(path))
+                    with open(spec_path, 'wb') as spec_f:
+                        pickle.dump(audio_tensor_spec, spec_f)
+
                     index.append(
                         {
-                            "path": str(flac_path.absolute().resolve()),
+                            "path": path,
+                            "spec_path": spec_path,
                             "text": f_text.lower(),
                             "audio_len": length,
                         }
