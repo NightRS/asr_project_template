@@ -2,81 +2,31 @@
 
 ## Installation guide
 
-< Write your installation guide here >
+You can download `evaluate_results.ipynb` and run it yourself (I was using Google Colab). It has all the necessary commands included.
 
-```shell
-pip install -r ./requirements.txt
+## Brief Report
+
+I encountered some issues when using the template:
+
+- The training loop seemed to make more steps than specified in the config. Turns out that in `asr_project_template/hw_asr/trainer/trainer.py`, line 87 the loop looks like this:
+
+```
+for batch_idx in range(inf):
+    …
+    if batch_idx >= self.len_epoch:
+        break
 ```
 
-## Recommended implementation order
+so basically the epoch had the length of `self.len_epoch + 1`.
 
-You might be a little intimidated by the number of folders and classes. Try to follow this steps to gradually undestand
-the workflow.
+- The template doesn’t handle the absence of the LR scheduler well, but there are use cases when you don’t want to use one.
 
-1) Test `hw_asr/tests/test_dataset.py`  and `hw_asr/tests/test_config.py` and make sure everythin works for you
-2) Implement missing functions to fix tests in  `hw_asr\tests\test_text_encoder.py`
-3) Implement missing functions to fix tests in  `hw_asr\tests\test_dataloader.py`
-4) Implement functions in `hw_asr\metric\utils.py`
-5) Implement missing function to run `train.py` with a baseline model
-6) Write your own model and try to overfit it on a single batch
-7) Implement ctc beam search and add metrics to calculate WER and CER over hypothesis obtained from beam search.
-8) ~~Pain and suffering~~ Implement your own models and train them. You've mastered this template when you can tune your
-   experimental setup just by tuning `configs.json` file and running `train.py`
-9) Don't forget to write a report about your work
-10) Get hired by Google the next day
+You can check out my code to find out how I dealt with it.
 
-## Before submitting
+Regarding the model training.
 
-0) Make sure your projects run on a new machine after complemeting the installation guide or by 
-   running it in docker container.
-1) Search project for `# TODO: your code here` and implement missing functionality
-2) Make sure all tests work without errors
-   ```shell
-   python -m unittest discover hw_asr/tests
-   ```
-3) Make sure `test.py` works fine and works as expected. You should create files `default_test_config.json` and your
-   installation guide should download your model checpoint and configs in `default_test_model/checkpoint.pth`
-   and `default_test_model/config.json`.
-   ```shell
-   python test.py \
-      -c default_test_config.json \
-      -r default_test_model/checkpoint.pth \
-      -t test_data \
-      -o test_result.json
-   ```
-4) Use `train.py` for training
+You can find logs of my final training here: https://wandb.ai/night_rs/asr_project. I used the `ls_first` config for 30 epochs and the `ls_second` config for 3 epochs. My final model is a combination of ideas from DeepSpeech and DeepSpeech2 papers. It can reach `18 CER` on the clean test part of Librispeech. The model is named LinGRUModel and consists of 7 hidden layers: 4 fully connected and 3 bidirectional recurrent (GRU).
 
-## Credits
+My code has 4 necessary augmentations implemented, as well as an LM inside the beam search function.
 
-This repository is based on a heavily modified fork
-of [pytorch-template](https://github.com/victoresque/pytorch-template) repository.
-
-## Docker
-
-You can use this project with docker. Quick start:
-
-```bash 
-docker build -t my_hw_asr_image . 
-docker run \
-   --gpus '"device=0"' \
-   -it --rm \
-   -v /path/to/local/storage/dir:/repos/asr_project_template/data/datasets \
-   -e WANDB_API_KEY=<your_wandb_api_key> \
-	my_hw_asr_image python -m unittest 
-```
-
-Notes:
-
-* `-v /out/of/container/path:/inside/container/path` -- bind mount a path, so you wouldn't have to download datasets at
-  the start of every docker run.
-* `-e WANDB_API_KEY=<your_wandb_api_key>` -- set envvar for wandb (if you want to use it). You can find your API key
-  here: https://wandb.ai/authorize
-
-## TODO
-
-These barebones can use more tests. We highly encourage students to create pull requests to add more tests / new
-functionality. Current demands:
-
-* Tests for beam search
-* README section to describe folders
-* Notebook to show how to work with `ConfigParser` and `config_parser.init_obj(...)`
+The training time greatly (negatively) impacted the experiment variety. Unfortunately, I didn't implement the convolution layer in my model as I was getting infinite loss since the second batch. A good convolutional layer could have reduced the training time. A better-tuned optimizer (I used standard Adam) could have been a plus as well.
