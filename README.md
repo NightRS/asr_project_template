@@ -10,9 +10,9 @@ I encountered some issues when using the template:
 
 - The training loop seemed to make more steps than specified in the config. Turns out that in `asr_project_template/hw_asr/trainer/trainer.py`, line 87 the loop looks like this:
 
-```
+```python
 for batch_idx in range(inf):
-    …
+    # ...
     if batch_idx >= self.len_epoch:
         break
 ```
@@ -25,7 +25,7 @@ You can check out my code to find out how I dealt with it.
 
 Regarding the model training.
 
-You can find logs of my final training here: https://wandb.ai/night_rs/asr_project. I used the `ls_first` config for 30 epochs and the `ls_second` config for 3 epochs. My final model is a combination of ideas from DeepSpeech and DeepSpeech2 papers. It can reach `18 CER` on the clean test part of Librispeech. The model is named LinGRUModel and consists of 7 hidden layers: 4 fully connected and 3 bidirectional recurrent (GRU).
+You can find logs of my final training here: https://wandb.ai/night_rs/asr_project. I used the `ls_first` config for 30 epochs and the `ls_second` config for 3 epochs. My final model is a combination of ideas from DeepSpeech and DeepSpeech2 papers. It can reach `18 CER` on the clean test part of Librispeech (check `evaluate_results.ipynb`). The model is named LinGRUModel and consists of 7 hidden layers: 4 fully connected and 3 bidirectional recurrent (GRU).
 
 My code has 4 necessary augmentations implemented, as well as an LM inside the beam search function.
 
