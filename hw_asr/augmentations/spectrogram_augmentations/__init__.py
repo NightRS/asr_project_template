@@ -1,9 +1,12 @@
-from hw_asr.augmentations.spectrogram_augmentations.freq_masking import FrequencyMasking
-from hw_asr.augmentations.spectrogram_augmentations.time_masking import TimeMasking
-from hw_asr.augmentations.spectrogram_augmentations.time_stretch import TimeStretch
+from hw_asr.augmentations.spectrogram_augmentations.freq_masking import FrequencyMasking, RandomFrequencyMasking
+from hw_asr.augmentations.spectrogram_augmentations.time_masking import TimeMasking, RandomTimeMasking
+from hw_asr.augmentations.spectrogram_augmentations.time_stretch import TimeStretch, RandomTimeStretch
 
 __all__ = [
     "FrequencyMasking",
+    "RandomFrequencyMasking",
     "TimeMasking",
+    "RandomTimeMasking",
     "TimeStretch",
+    "RandomTimeStretch",
 ]
