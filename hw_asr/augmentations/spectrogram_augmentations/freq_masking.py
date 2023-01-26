@@ -18,7 +18,7 @@ class FrequencyMasking(AugmentationBase):
 class RandomFrequencyMasking:
     def __init__(self, p, max_length):
         self._aug = RandomApply(
-            FrequencyMasking(freq_mask_param=max_length),
+            FrequencyMasking(max_length=max_length),
             p=p,
         )
 
