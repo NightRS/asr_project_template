@@ -39,4 +39,4 @@ class DeepSpeech2(BaseModel):
         return {"logits": h}
 
     def transform_input_lengths(self, input_lengths):
-        return (input_lengths - (self.kernel_size1 - 1) - 1) // self.stride + 1
+        return (input_lengths - (self.kernel_size - 1) - 1) // self.stride + 1
