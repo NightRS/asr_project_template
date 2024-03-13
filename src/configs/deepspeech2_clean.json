@@ -1,0 +1,139 @@
+{
+  "name": "deepspeech2",
+  "n_gpu": 1,
+  "preprocessing": {
+    "sr": 16000,
+    "spectrogram": {
+      "type": "MelSpectrogram",
+      "args": {
+        "n_mels": 128
+      }
+    },
+    "log_spec": true
+  },
+  "augmentations": {
+    "wave": [],
+    "spectrogram": []
+  },
+  "arch": {
+    "type": "DeepSpeech2",
+    "args": {
+      "n_feats": 128,
+      "rnn_hidden": 512
+    }
+  },
+  "data": {
+    "train": {
+      "batch_size": 128,
+      "num_workers": 8,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "train-clean-100",
+            "max_audio_length": 17.0
+          }
+        },
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "train-clean-360",
+            "max_audio_length": 17.0
+          }
+        }
+      ]
+    },
+    "dev-clean": {
+      "batch_size": 128,
+      "num_workers": 8,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "dev-clean"
+          }
+        }
+      ]
+    },
+    "dev-other": {
+      "batch_size": 128,
+      "num_workers": 8,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "dev-other"
+          }
+        }
+      ]
+    },
+    "test-clean": {
+      "batch_size": 128,
+      "num_workers": 8,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "test-clean"
+          }
+        }
+      ]
+    },
+    "test-other": {
+      "batch_size": 128,
+      "num_workers": 8,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "test-other"
+          }
+        }
+      ]
+    }
+  },
+  "optimizer": {
+    "type": "Adam",
+    "args": {
+      "lr": 1e-4
+    }
+  },
+  "loss": {
+    "type": "CTCLoss",
+    "args": {}
+  },
+  "metrics": [
+    {
+      "type": "ArgmaxWERMetric",
+      "args": {
+        "name": "WER (argmax)"
+      }
+    },
+    {
+      "type": "ArgmaxCERMetric",
+      "args": {
+        "name": "CER (argmax)"
+      }
+    }
+  ],
+  "lr_scheduler": {
+    "type": "ConstantLR",
+    "args": {
+      "factor": 1,
+      "total_iters": 0
+    }
+  },
+  "trainer": {
+    "epochs": 20,
+    "save_dir": "saved/",
+    "save_period": 5,
+    "verbosity": 2,
+    "monitor": "min dev-clean_loss",
+    "early_stop": 100,
+    "visualize": "wandb",
+    "wandb_project": "asr_project2",
+    "grad_norm_clip": 10,
+    "SortaGrad": true,
+    "augs_start_epoch": 1
+  }
+}
