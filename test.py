@@ -6,11 +6,11 @@ from pathlib import Path
 import torch
 from tqdm import tqdm
 
-import hw_asr.model as module_model
-from hw_asr.trainer import Trainer
-from hw_asr.utils import ROOT_PATH
-from hw_asr.utils.object_loading import get_dataloaders
-from hw_asr.utils.parse_config import ConfigParser
+import src.model as module_model
+from src.trainer import Trainer
+from src.utils.object_loading import get_dataloader_from_params, get_datasets
+from src.utils.parse_config import ConfigParser
+from src.utils.util import ROOT_PATH
 
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
@@ -25,7 +25,7 @@ def main(config, out_file):
     text_encoder = config.get_text_encoder()
 
     # setup data_loader instances
-    dataloaders = get_dataloaders(config, text_encoder)
+    dataset_and_params = get_datasets(config, text_encoder)
 
     # build model architecture
     model = config.init_obj(config["arch"], module_model, n_class=len(text_encoder))
@@ -45,7 +45,8 @@ def main(config, out_file):
     results = []
 
     with torch.no_grad():
-        for batch_num, batch in enumerate(tqdm(dataloaders["test"])):
+        dataloader = get_dataloader_from_params(*dataset_and_params["test"])
+        for _, batch in enumerate(tqdm(dataloader)):
             batch = Trainer.move_batch_to_device(batch, device)
             output = model(**batch)
             if type(output) is dict:
@@ -64,9 +65,13 @@ def main(config, out_file):
                 results.append(
                     {
                         "ground_truth": batch["text"][i],
-                        "pred_text_argmax": text_encoder.ctc_decode(argmax.cpu().numpy()),
+                        "pred_text_argmax": text_encoder.ctc_decode(
+                            argmax.cpu().numpy()
+                        ),
                         "pred_text_beam_search": text_encoder.ctc_beam_search(
-                            batch["probs"][i], batch["log_probs_length"][i], beam_size=100
+                            batch["probs"][i],
+                            batch["log_probs_length"][i],
+                            beam_size=100,
                         )[0].text,
                     }
                 )
@@ -136,7 +141,7 @@ if __name__ == "__main__":
     # we assume it is located with checkpoint in the same folder
     model_config = Path(args.resume).parent / "config.json"
     with model_config.open() as f:
-        config = ConfigParser(json.load(f), resume=args.resume)
+        config = ConfigParser("test_run", json.load(f), resume=args.resume)
 
     # update with addition configs from `args.config` if provided
     if args.config is not None:

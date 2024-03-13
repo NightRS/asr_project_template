@@ -1,0 +1,109 @@
+{
+  "name": "one_batch_test",
+  "n_gpu": 1,
+  "preprocessing": {
+    "sr": 16000,
+    "spectrogram": {
+      "type": "MelSpectrogram",
+      "args": {
+        "n_mels": 64
+      }
+    },
+    "log_spec": true
+  },
+  "text_encoder": {
+    "type": "CTCCharTextEncoder",
+    "args": {}
+  },
+  "augmentations": {
+    "wave": [],
+    "spectrogram": []
+  },
+  "arch": {
+    "type": "BaselineModel",
+    "args": {
+      "n_feats": 64,
+      "fc_hidden": 32
+    }
+  },
+  "data": {
+    "train": {
+      "batch_size": 10,
+      "num_workers": 1,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "dev-clean",
+            "max_audio_length": 17.0,
+            "limit": 10
+          }
+        }
+      ]
+    },
+    "val": {
+      "batch_size": 10,
+      "num_workers": 1,
+      "datasets": [
+        {
+          "type": "LibrispeechDataset",
+          "args": {
+            "part": "dev-clean",
+            "max_audio_length": 17.0,
+            "limit": 10
+          }
+        }
+      ]
+    }
+  },
+  "optimizer": {
+    "type": "Adam",
+    "args": {
+      "lr": 1e-3
+    }
+  },
+  "loss": {
+    "type": "CTCLoss",
+    "args": {
+      "blank": 0,
+      "zero_infinity": true
+    }
+  },
+  "metrics": [
+    {
+      "type": "ArgmaxWERMetric",
+      "args": {
+        "name": "WER (argmax)"
+      }
+    },
+    {
+      "type": "ArgmaxCERMetric",
+      "args": {
+        "name": "CER (argmax)"
+      }
+    }
+  ],
+  "lr_scheduler": {
+    "type": "ConstantLR",
+    "args": {
+      "factor": 1,
+      "total_iters": 0
+    }
+  },
+  "trainer": {
+    "epochs": 3,
+    "save_dir": "saved/",
+    "save_period": 5,
+    "verbosity": 2,
+    "monitor": "min val_loss",
+    "early_stop": 100,
+    "visualize": "wandb",
+    "wandb_project": "asr_project3",
+    "len_epoch": 12,
+    "grad_norm_clip_threshold": 10,
+    "SortaGrad": false,
+    "augs_start_epoch": 1,
+    "log_step": 4,
+    "media_log_step": 99
+  }
+}
